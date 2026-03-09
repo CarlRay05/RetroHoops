@@ -121,10 +121,105 @@
       }
     }
 
+    function drawHoop(x, y) {
+      // Backboard (right side)
+      ctx.fillStyle = '#eeeeee';
+      ctx.fillRect(x + RIM_HALF + 6, y - 36, 10, 56);
+      // Backboard inner square
+      ctx.strokeStyle = '#e05000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + RIM_HALF + 8, y - 24, 6, 20);
+
+      // Support arm from backboard to rim
+      ctx.strokeStyle = '#aaaaaa';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + RIM_HALF + 6, y + 4);
+      ctx.lineTo(x + RIM_HALF, y + 4);
+      ctx.stroke();
+
+      // Rim (two pixel-art circle ends)
+      ctx.fillStyle = '#e05000';
+      ctx.fillRect(x - RIM_HALF - 5, y, 10, 6);      // left rim end
+      ctx.fillRect(x + RIM_HALF - 5, y, 10, 6);      // right rim end
+
+      // Rim bar connecting
+      ctx.fillStyle = '#e05000';
+      ctx.fillRect(x - RIM_HALF, y + 2, RIM_HALF * 2, 3);
+
+      // Net (pixel lines hanging down)
+      ctx.strokeStyle = '#ffffff88';
+      ctx.lineWidth = 1;
+      const netSegs = 7;
+      for (let i = 0; i <= netSegs; i++) {
+        const nx = x - RIM_HALF + (RIM_HALF * 2 / netSegs) * i;
+        const bottomX = x - RIM_HALF * 0.4 + (RIM_HALF * 0.8 / netSegs) * i;
+        ctx.beginPath();
+        ctx.moveTo(nx, y + 5);
+        ctx.lineTo(bottomX, y + NET_HEIGHT);
+        ctx.stroke();
+      }
+      // Net horizontal lines
+      for (let row = 1; row < 4; row++) {
+        const t = row / 4;
+        const lx = x - RIM_HALF + RIM_HALF * 0.2 * t;
+        const rx = x + RIM_HALF - RIM_HALF * 0.2 * t;
+        const ny = y + 5 + NET_HEIGHT * t;
+        ctx.beginPath();
+        ctx.moveTo(lx, ny);
+        ctx.lineTo(rx, ny);
+        ctx.stroke();
+      }
+    }
+
+    function drawBall(x, y) {
+      // Draw shadow under ball (only when ball is in lower half of screen)
+      if (state.ball.y > H * 0.5) {
+        const shadowY = H - 14;
+        const shadowScale = 1 - (shadowY - state.ball.y) / (H * 0.5);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(state.ball.x, shadowY, BALL_RADIUS * Math.max(0.2, shadowScale), 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Main orange circle
+      ctx.fillStyle = '#e85d04';
+      ctx.beginPath();
+      ctx.arc(x, y, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Highlight
+      ctx.fillStyle = '#f4a261';
+      ctx.beginPath();
+      ctx.arc(x - 5, y - 5, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Black seam lines (pixel art style)
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      // Vertical seam
+      ctx.beginPath();
+      ctx.moveTo(x, y - BALL_RADIUS);
+      ctx.bezierCurveTo(x + 10, y - 5, x + 10, y + 5, x, y + BALL_RADIUS);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y - BALL_RADIUS);
+      ctx.bezierCurveTo(x - 10, y - 5, x - 10, y + 5, x, y + BALL_RADIUS);
+      ctx.stroke();
+      // Horizontal seam
+      ctx.beginPath();
+      ctx.moveTo(x - BALL_RADIUS, y);
+      ctx.bezierCurveTo(x - 5, y - 10, x + 5, y - 10, x + BALL_RADIUS, y);
+      ctx.stroke();
+    }
+
     function draw() {
       ctx.clearRect(0, 0, W, H);
       drawBackground();
       drawCourt();
+      drawHoop(state.hoop.x, state.hoop.y);
+      drawBall(state.ball.x, state.ball.y);
       drawScanlines();
     }
 
