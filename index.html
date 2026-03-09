@@ -59,6 +59,81 @@
       lastShotRimHit: false, // tracks if ball touched rim this shot
       basketCount: 0,
     };
+
+    // ---- DRAWING ----
+
+    function drawBackground() {
+      // Sky gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, H * 0.65);
+      grad.addColorStop(0, '#0a0a2e');
+      grad.addColorStop(1, '#1a1a4e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H * 0.65);
+
+      // Crowd silhouettes (simple pixel rows)
+      ctx.fillStyle = '#12124a';
+      for (let row = 0; row < 4; row++) {
+        const y = 60 + row * 28;
+        for (let x = 0; x < W; x += 18 + (row % 3) * 6) {
+          const h = 18 + (row % 2) * 8;
+          ctx.fillRect(x, y, 14, h);
+        }
+      }
+    }
+
+    function drawCourt() {
+      const floorY = H * 0.65;
+
+      // Floor base
+      ctx.fillStyle = '#8B5E1A';
+      ctx.fillRect(0, floorY, W, H - floorY);
+
+      // Hardwood planks
+      ctx.fillStyle = '#7A5016';
+      const plankH = 14;
+      for (let y = floorY; y < H; y += plankH * 2) {
+        ctx.fillRect(0, y + plankH, W, plankH);
+      }
+
+      // Plank seam lines
+      ctx.strokeStyle = '#6B4512';
+      ctx.lineWidth = 1;
+      for (let x = 60; x < W; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, floorY);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+
+      // Court line
+      ctx.strokeStyle = '#ffffff44';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, floorY);
+      ctx.lineTo(W, floorY);
+      ctx.stroke();
+    }
+
+    function drawScanlines() {
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      for (let y = 0; y < H; y += 3) {
+        ctx.fillRect(0, y, W, 1);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      drawBackground();
+      drawCourt();
+      drawScanlines();
+    }
+
+    function gameLoop() {
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
   </script>
 </body>
 </html>
