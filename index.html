@@ -214,11 +214,54 @@
       ctx.stroke();
     }
 
+    function drawTrajectory() {
+      if (state.phase !== 'dragging') return;
+      const dx = state.dragStart.x - state.dragCurrent.x;
+      const dy = state.dragStart.y - state.dragCurrent.y;
+      const speed = Math.sqrt(dx * dx + dy * dy);
+      if (speed < 8) return;
+
+      const power = speed / MAX_DRAG;
+      let sx = state.ball.x;
+      let sy = state.ball.y;
+      let svx = dx * 0.18 * power;
+      let svy = dy * 0.18 * power;
+
+      ctx.fillStyle = '#ffffffaa';
+      for (let i = 0; i < 18; i++) {
+        svy += GRAVITY;
+        sx += svx;
+        sy += svy;
+        if (sy > H) break;
+        const alpha = 1 - i / 18;
+        ctx.globalAlpha = alpha * 0.7;
+        const r = 4 - i * 0.15;
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.max(1, r), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawDragLine() {
+      if (state.phase !== 'dragging') return;
+      ctx.strokeStyle = '#ffffff55';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(state.ball.x, state.ball.y);
+      ctx.lineTo(state.dragCurrent.x, state.dragCurrent.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     function draw() {
       ctx.clearRect(0, 0, W, H);
       drawBackground();
       drawCourt();
       drawHoop(state.hoop.x, state.hoop.y);
+      drawTrajectory();
+      drawDragLine();
       drawBall(state.ball.x, state.ball.y);
       drawScanlines();
     }
@@ -229,6 +272,68 @@
     }
 
     gameLoop();
+
+    // ---- MOUSE EVENTS ----
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
+    }
+
+    function isOnBall(pos) {
+      const dx = pos.x - state.ball.x;
+      const dy = pos.y - state.ball.y;
+      return Math.sqrt(dx * dx + dy * dy) < BALL_RADIUS + 12;
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (state.phase !== 'idle') return;
+      const pos = getCanvasPos(e);
+      if (isOnBall(pos)) {
+        state.phase = 'dragging';
+        state.ball.dragging = true;
+        state.dragStart = { x: state.ball.x, y: state.ball.y };
+        state.dragCurrent = { x: pos.x, y: pos.y };
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (state.phase !== 'dragging') return;
+      const pos = getCanvasPos(e);
+      const dx = pos.x - state.dragStart.x;
+      const dy = pos.y - state.dragStart.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > MAX_DRAG) {
+        state.dragCurrent.x = state.dragStart.x + (dx / dist) * MAX_DRAG;
+        state.dragCurrent.y = state.dragStart.y + (dy / dist) * MAX_DRAG;
+      } else {
+        state.dragCurrent = { x: pos.x, y: pos.y };
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      if (state.phase !== 'dragging') return;
+      const dx = state.dragStart.x - state.dragCurrent.x;
+      const dy = state.dragStart.y - state.dragCurrent.y;
+      const speed = Math.sqrt(dx * dx + dy * dy);
+      if (speed < 8) {
+        state.phase = 'idle';
+        state.ball.dragging = false;
+        return;
+      }
+      const power = speed / MAX_DRAG;
+      state.ball.vx = dx * 0.18 * power;
+      state.ball.vy = dy * 0.18 * power;
+      state.ball.launched = true;
+      state.ball.dragging = false;
+      state.lastShotRimHit = false;
+      state.phase = 'flying';
+    });
   </script>
 </body>
 </html>
