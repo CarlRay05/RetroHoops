@@ -122,38 +122,49 @@
     }
 
     function drawHoop(x, y) {
-      // Backboard (right side)
-      ctx.fillStyle = '#eeeeee';
-      ctx.fillRect(x + RIM_HALF + 6, y - 36, 10, 56);
-      // Backboard inner square
-      ctx.strokeStyle = '#e05000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + RIM_HALF + 8, y - 24, 6, 20);
+      const bbW = 90;
+      const bbH = 52;
+      const bbY = y - 70;
 
-      // Support arm from backboard to rim
-      ctx.strokeStyle = '#aaaaaa';
-      ctx.lineWidth = 3;
+      // Support pole (centered, from backboard down to rim)
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(x + RIM_HALF + 6, y + 4);
-      ctx.lineTo(x + RIM_HALF, y + 4);
+      ctx.moveTo(x, bbY + bbH);
+      ctx.lineTo(x, y);
       ctx.stroke();
 
-      // Rim (two pixel-art circle ends)
-      ctx.fillStyle = '#e05000';
-      ctx.fillRect(x - RIM_HALF - 5, y, 10, 6);      // left rim end
-      ctx.fillRect(x + RIM_HALF - 5, y, 10, 6);      // right rim end
+      // Backboard (centered behind rim)
+      ctx.fillStyle = '#dddddd';
+      ctx.fillRect(x - bbW / 2, bbY, bbW, bbH);
+      // Backboard border
+      ctx.strokeStyle = '#aaaaaa';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - bbW / 2, bbY, bbW, bbH);
+      // Backboard inner target box
+      ctx.strokeStyle = '#e05000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 20, bbY + 14, 40, 24);
 
-      // Rim bar connecting
+      // Rim (front view — horizontal bar with rounded end caps)
       ctx.fillStyle = '#e05000';
-      ctx.fillRect(x - RIM_HALF, y + 2, RIM_HALF * 2, 3);
+      ctx.fillRect(x - RIM_HALF, y, RIM_HALF * 2, 5);
+      // Left end cap
+      ctx.beginPath();
+      ctx.arc(x - RIM_HALF, y + 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+      // Right end cap
+      ctx.beginPath();
+      ctx.arc(x + RIM_HALF, y + 2, 5, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Net (pixel lines hanging down)
+      // Net (hanging straight down from rim)
       ctx.strokeStyle = '#ffffff88';
       ctx.lineWidth = 1;
       const netSegs = 7;
       for (let i = 0; i <= netSegs; i++) {
         const nx = x - RIM_HALF + (RIM_HALF * 2 / netSegs) * i;
-        const bottomX = x - RIM_HALF * 0.4 + (RIM_HALF * 0.8 / netSegs) * i;
+        const bottomX = x - RIM_HALF * 0.45 + (RIM_HALF * 0.9 / netSegs) * i;
         ctx.beginPath();
         ctx.moveTo(nx, y + 5);
         ctx.lineTo(bottomX, y + NET_HEIGHT);
@@ -162,8 +173,8 @@
       // Net horizontal lines
       for (let row = 1; row < 4; row++) {
         const t = row / 4;
-        const lx = x - RIM_HALF + RIM_HALF * 0.2 * t;
-        const rx = x + RIM_HALF - RIM_HALF * 0.2 * t;
+        const lx = x - RIM_HALF + RIM_HALF * 0.18 * t;
+        const rx = x + RIM_HALF - RIM_HALF * 0.18 * t;
         const ny = y + 5 + NET_HEIGHT * t;
         ctx.beginPath();
         ctx.moveTo(lx, ny);
@@ -255,6 +266,18 @@
       ctx.setLineDash([]);
     }
 
+    function drawPopTexts() {
+      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      state.popTexts.forEach(p => {
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.text.startsWith('SWISH') ? '#ffd700' : p.text === 'MISS' ? '#ff6666' : '#ffffff';
+        ctx.fillText(p.text, p.x, p.y);
+      });
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left';
+    }
+
     function draw() {
       ctx.clearRect(0, 0, W, H);
       drawBackground();
@@ -263,6 +286,7 @@
       drawTrajectory();
       drawDragLine();
       drawBall(state.ball.x, state.ball.y);
+      drawPopTexts();
       drawScanlines();
     }
 
@@ -282,8 +306,80 @@
         state.ball.x += state.ball.vx;
         state.ball.y += state.ball.vy;
 
+        // Rim collision
+        const hoopX = state.hoop.x;
+        const hoopY = state.hoop.y;
+        const rimY = hoopY + 3;
+
+        // Left rim end cap
+        const dlx = state.ball.x - (hoopX - RIM_HALF);
+        const dly = state.ball.y - rimY;
+        if (Math.sqrt(dlx * dlx + dly * dly) < BALL_RADIUS + 4) {
+          state.ball.vx = Math.abs(state.ball.vx) * BOUNCE + 1;
+          state.ball.vy *= -BOUNCE;
+          state.lastShotRimHit = true;
+        }
+
+        // Right rim end cap
+        const drx = state.ball.x - (hoopX + RIM_HALF);
+        const dry = state.ball.y - rimY;
+        if (Math.sqrt(drx * drx + dry * dry) < BALL_RADIUS + 4) {
+          state.ball.vx = -Math.abs(state.ball.vx) * BOUNCE - 1;
+          state.ball.vy *= -BOUNCE;
+          state.lastShotRimHit = true;
+        }
+
+        // Backboard collision (centered)
+        const bbTop = hoopY - 70;
+        const bbBottom = hoopY - 18;
+        const bbLeft = hoopX - 45;
+        const bbRight = hoopX + 45;
+        if (
+          state.ball.x + BALL_RADIUS > bbLeft && state.ball.x - BALL_RADIUS < bbRight &&
+          state.ball.y + BALL_RADIUS > bbTop && state.ball.y - BALL_RADIUS < bbBottom
+        ) {
+          state.ball.vy *= -BOUNCE;
+          state.lastShotRimHit = true;
+        }
+
+        // Score detection: ball passes through net zone going downward
+        const netLeft  = hoopX - RIM_HALF + 6;
+        const netRight = hoopX + RIM_HALF - 6;
+        const netTop   = hoopY + 5;
+        const netBottom = hoopY + NET_HEIGHT;
+        if (
+          state.ball.x > netLeft && state.ball.x < netRight &&
+          state.ball.y > netTop && state.ball.y < netBottom &&
+          state.ball.vy > 0
+        ) {
+          const isSwish = !state.lastShotRimHit;
+          const points = isSwish ? 3 : 2;
+          state.score += points;
+          state.basketCount++;
+
+          if (state.score > state.bestScore) {
+            state.bestScore = state.score;
+            localStorage.setItem('retroHoops_best', state.bestScore);
+          }
+
+          state.popTexts.push({
+            text: isSwish ? 'SWISH! +3' : 'NICE! +2',
+            x: hoopX, y: hoopY - 20, alpha: 1, dy: -1.5,
+          });
+
+          moveHoop();
+          state.phase = 'resetting';
+          setTimeout(() => resetBall(), 700);
+        }
+
         // Out of bounds — miss
         if (state.ball.y > H + 60 || state.ball.x < -60 || state.ball.x > W + 60) {
+          state.popTexts.push({
+            text: 'MISS',
+            x: Math.min(Math.max(state.ball.x, 60), W - 60),
+            y: Math.min(state.ball.y, H - 60),
+            alpha: 1, dy: -1,
+          });
           state.phase = 'resetting';
           setTimeout(() => resetBall(), 800);
         }
@@ -303,6 +399,18 @@
       // Hoop lerp toward target
       state.hoop.x += (state.hoop.targetX - state.hoop.x) * 0.05;
       state.hoop.y += (state.hoop.targetY - state.hoop.y) * 0.05;
+
+      // Update pop texts
+      state.popTexts = state.popTexts.filter(p => p.alpha > 0.02);
+      state.popTexts.forEach(p => { p.y += p.dy; p.alpha -= 0.018; });
+    }
+
+    function moveHoop() {
+      const margin = 120;
+      state.hoop.targetX = margin + Math.random() * (W - margin * 2);
+      if (state.basketCount % 5 === 0) {
+        state.hoop.targetY = 130 + Math.random() * 120;
+      }
     }
 
     function gameLoop() {
