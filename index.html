@@ -124,58 +124,49 @@
     function drawHoop(x, y) {
       const bbW = 90;
       const bbH = 52;
-      const bbY = y - 70;
+      const bbY = y - bbH;   // backboard sits directly above rim
 
-      // Support pole (centered, from backboard down to rim)
-      ctx.strokeStyle = '#888888';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(x, bbY + bbH);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-
-      // Backboard (centered behind rim)
+      // Backboard (centered, bottom edge aligns with rim)
       ctx.fillStyle = '#dddddd';
       ctx.fillRect(x - bbW / 2, bbY, bbW, bbH);
-      // Backboard border
       ctx.strokeStyle = '#aaaaaa';
       ctx.lineWidth = 2;
       ctx.strokeRect(x - bbW / 2, bbY, bbW, bbH);
-      // Backboard inner target box
+      // Inner target box
       ctx.strokeStyle = '#e05000';
       ctx.lineWidth = 2;
-      ctx.strokeRect(x - 20, bbY + 14, 40, 24);
+      ctx.strokeRect(x - 18, bbY + 10, 36, 22);
 
-      // Rim (front view — horizontal bar with rounded end caps)
+      // Rim — attached to bottom of backboard
       ctx.fillStyle = '#e05000';
       ctx.fillRect(x - RIM_HALF, y, RIM_HALF * 2, 5);
-      // Left end cap
       ctx.beginPath();
       ctx.arc(x - RIM_HALF, y + 2, 5, 0, Math.PI * 2);
       ctx.fill();
-      // Right end cap
       ctx.beginPath();
       ctx.arc(x + RIM_HALF, y + 2, 5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Net (hanging straight down from rim)
+      // Net — converges tightly so outer strings aren't too long
       ctx.strokeStyle = '#ffffff88';
       ctx.lineWidth = 1;
       const netSegs = 7;
+      const netH = 28;   // shorter net height
       for (let i = 0; i <= netSegs; i++) {
         const nx = x - RIM_HALF + (RIM_HALF * 2 / netSegs) * i;
-        const bottomX = x - RIM_HALF * 0.45 + (RIM_HALF * 0.9 / netSegs) * i;
+        // Bottom converges to 35% of rim width
+        const bottomX = x - RIM_HALF * 0.35 + (RIM_HALF * 0.7 / netSegs) * i;
         ctx.beginPath();
         ctx.moveTo(nx, y + 5);
-        ctx.lineTo(bottomX, y + NET_HEIGHT);
+        ctx.lineTo(bottomX, y + netH);
         ctx.stroke();
       }
-      // Net horizontal lines
+      // Net horizontal cross-strings
       for (let row = 1; row < 4; row++) {
         const t = row / 4;
-        const lx = x - RIM_HALF + RIM_HALF * 0.18 * t;
-        const rx = x + RIM_HALF - RIM_HALF * 0.18 * t;
-        const ny = y + 5 + NET_HEIGHT * t;
+        const lx = x - RIM_HALF * (1 - 0.3 * t);
+        const rx = x + RIM_HALF * (1 - 0.3 * t);
+        const ny = y + 5 + netH * t;
         ctx.beginPath();
         ctx.moveTo(lx, ny);
         ctx.lineTo(rx, ny);
@@ -206,22 +197,29 @@
       ctx.arc(x - 5, y - 5, 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Black seam lines (pixel art style)
-      ctx.strokeStyle = '#111';
-      ctx.lineWidth = 2;
-      // Vertical seam
+      // Seam lines — classic 4-panel basketball look
+      ctx.strokeStyle = '#1a0800';
+      ctx.lineWidth = 1.5;
+      const r = BALL_RADIUS;
+      // Left parenthesis seam
       ctx.beginPath();
-      ctx.moveTo(x, y - BALL_RADIUS);
-      ctx.bezierCurveTo(x + 10, y - 5, x + 10, y + 5, x, y + BALL_RADIUS);
+      ctx.moveTo(x - 5, y - r + 3);
+      ctx.bezierCurveTo(x - 16, y - 4, x - 16, y + 4, x - 5, y + r - 3);
       ctx.stroke();
+      // Right parenthesis seam
       ctx.beginPath();
-      ctx.moveTo(x, y - BALL_RADIUS);
-      ctx.bezierCurveTo(x - 10, y - 5, x - 10, y + 5, x, y + BALL_RADIUS);
+      ctx.moveTo(x + 5, y - r + 3);
+      ctx.bezierCurveTo(x + 16, y - 4, x + 16, y + 4, x + 5, y + r - 3);
       ctx.stroke();
-      // Horizontal seam
+      // Equatorial seam — top arc
       ctx.beginPath();
-      ctx.moveTo(x - BALL_RADIUS, y);
-      ctx.bezierCurveTo(x - 5, y - 10, x + 5, y - 10, x + BALL_RADIUS, y);
+      ctx.moveTo(x - r + 3, y);
+      ctx.bezierCurveTo(x - 5, y - 10, x + 5, y - 10, x + r - 3, y);
+      ctx.stroke();
+      // Equatorial seam — bottom arc
+      ctx.beginPath();
+      ctx.moveTo(x - r + 3, y);
+      ctx.bezierCurveTo(x - 5, y + 10, x + 5, y + 10, x + r - 3, y);
       ctx.stroke();
     }
 
@@ -329,9 +327,9 @@
           state.lastShotRimHit = true;
         }
 
-        // Backboard collision (centered)
-        const bbTop = hoopY - 70;
-        const bbBottom = hoopY - 18;
+        // Backboard collision (centered, bbH=52 directly above rim)
+        const bbTop = hoopY - 52;
+        const bbBottom = hoopY;
         const bbLeft = hoopX - 45;
         const bbRight = hoopX + 45;
         if (
