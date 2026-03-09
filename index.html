@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Hoops</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="800" height="550"></canvas>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // --- CONSTANTS ---
+    const W = canvas.width;   // 800
+    const H = canvas.height;  // 550
+    const BALL_RADIUS = 18;
+    const BALL_START_X = W / 2;
+    const BALL_START_Y = H - 80;
+    const MAX_DRAG = 120;
+    const GRAVITY = 0.4;
+    const BOUNCE = 0.5;
+    const GAME_DURATION = 90; // seconds
+
+    // Hoop dimensions
+    const RIM_HALF = 28;      // half-width of the hoop opening
+    const RIM_Y_DEFAULT = 180;
+    const NET_HEIGHT = 40;
+
+    // --- STATE ---
+    const state = {
+      ball: { x: BALL_START_X, y: BALL_START_Y, vx: 0, vy: 0, dragging: false, launched: false },
+      hoop: { x: W / 2, y: RIM_Y_DEFAULT, targetX: W / 2, targetY: RIM_Y_DEFAULT },
+      score: 0,
+      bestScore: parseInt(localStorage.getItem('retroHoops_best') || '0'),
+      timeLeft: GAME_DURATION,
+      phase: 'idle', // 'idle' | 'dragging' | 'flying' | 'resetting' | 'gameover'
+      dragStart: { x: 0, y: 0 },
+      dragCurrent: { x: 0, y: 0 },
+      frameCount: 0,
+      popTexts: [],       // { text, x, y, alpha, dy }
+      lastShotRimHit: false, // tracks if ball touched rim this shot
+      basketCount: 0,
+    };
+  </script>
+</body>
+</html>
