@@ -647,6 +647,7 @@
         const bbLeft  = hoopX - 45;
         const bbRight = hoopX + 45;
         if (
+          state.ball.vy >= 0 &&
           state.ball.x + BALL_RADIUS > bbLeft && state.ball.x - BALL_RADIUS < bbRight &&
           state.ball.y + BALL_RADIUS > bbTop  && state.ball.y - BALL_RADIUS < hoopY
         ) {
@@ -712,6 +713,13 @@
             setTimeout(() => resetBall(), 500);
           }
         }
+      }
+
+      // ── Ball coasts through net after scoring ──
+      if (state.phase === 'resetting' && state.ball.launched) {
+        state.ball.vy += GRAVITY;
+        state.ball.x  += state.ball.vx;
+        state.ball.y  += state.ball.vy;
       }
 
       // ── Hoop lerp ──
