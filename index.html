@@ -266,7 +266,47 @@
       drawScanlines();
     }
 
+    function resetBall() {
+      state.ball.x = BALL_START_X;
+      state.ball.y = BALL_START_Y;
+      state.ball.vx = 0;
+      state.ball.vy = 0;
+      state.ball.launched = false;
+      state.ball.dragging = false;
+      state.phase = 'idle';
+    }
+
+    function update() {
+      if (state.phase === 'flying') {
+        state.ball.vy += GRAVITY;
+        state.ball.x += state.ball.vx;
+        state.ball.y += state.ball.vy;
+
+        // Out of bounds — miss
+        if (state.ball.y > H + 60 || state.ball.x < -60 || state.ball.x > W + 60) {
+          state.phase = 'resetting';
+          setTimeout(() => resetBall(), 800);
+        }
+
+        // Floor collision
+        if (state.ball.y + BALL_RADIUS > H - 10) {
+          state.ball.y = H - 10 - BALL_RADIUS;
+          state.ball.vy *= -BOUNCE;
+          state.ball.vx *= 0.85;
+          if (Math.abs(state.ball.vy) < 1) {
+            state.phase = 'resetting';
+            setTimeout(() => resetBall(), 500);
+          }
+        }
+      }
+
+      // Hoop lerp toward target
+      state.hoop.x += (state.hoop.targetX - state.hoop.x) * 0.05;
+      state.hoop.y += (state.hoop.targetY - state.hoop.y) * 0.05;
+    }
+
     function gameLoop() {
+      update();
       draw();
       requestAnimationFrame(gameLoop);
     }
